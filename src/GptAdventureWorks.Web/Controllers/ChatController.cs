@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GptAdventureWorks.Web.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class ChatController : ControllerBase
 {
 
