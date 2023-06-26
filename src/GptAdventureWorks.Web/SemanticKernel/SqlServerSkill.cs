@@ -1,5 +1,7 @@
 using System.Data.Common;
 using System.Data.SqlClient;
+using System.Runtime.InteropServices;
+using System.Text.Json;
 using GptAdventureWorks.Web.Data;
 using Microsoft.SemanticKernel.Orchestration;
 using Microsoft.SemanticKernel.SkillDefinition;
@@ -26,29 +28,45 @@ public class SqlServerSkill
     [SKFunctionName("GetSqlTables")]
     public async Task<string> GetSqlTables(string input, SKContext context)
     {
+        context.Log.LogInformation("Running GetSqlTables");
         var conn = await _lazyConnection.Value;
-        var tableNames = await conn.QueryAsync<string[]>(@"
+        var tableNames = await conn.QueryAsync<string>(@"
 SELECT CONCAT(TABLE_SCHEMA, '.', TABLE_NAME)
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_TYPE='BASE TABLE'
 ");
-        
         return string.Join(",", tableNames);
     }
     
     
-    [SKFunction("Input is a single database table name, output is a comma separated list of columns in that table.")]
-    [SKFunctionName("GetSqlTables")]
+    [SKFunction("Input is a comma separated list of table names. Output is a json document mapping table names to column names")]
+    [SKFunctionName("GetSqlTableColumns")]
     public async Task<string> GetSqlTableColumns(string input, SKContext context)
     {
+        context.Log.LogInformation("Running GetSqlTableColumns {Input}", input);
+        var tablesList = input.Split(",");
         var conn = await _lazyConnection.Value;
-        var columnNames = await conn.QueryAsync<string[]>(@"
-SELECT COLUMN_NAME
+        var data = await conn.QueryAsync<GetSqlTableColumnsQueryResult>(@"
+SELECT COLUMN_NAME, CONCAT(TABLE_SCHEMA, '.', TABLE_NAME) as Table_Name
 FROM INFORMATION_SCHEMA.COLUMNS c
-WHERE c.TABLE_NAME='@Product'
-", new {Product = input});
-        
-        return string.Join(",", columnNames);
+WHERE c.TABLE_NAME in @Tables
+", new {Tables = tablesList.Select(t => t.Substring(t.IndexOf('.')+1))});
+
+        return JsonSerializer.Serialize(data);
+    }
+    
+
+    private class GetSqlTableColumnsQueryResult {
+        public string Table_Name { get; set; }
+        public string Column_Name { get; set; }
+    }
+
+    [SKFunction("Return a random number between 1 and 10")]
+    [SKFunctionName("RandomInt1To10")]
+    public async Task<string> RandomInt1To10(string input, SKContext context)
+    {
+        var r = new Random();
+        return r.Next(1, 10).ToString();
     }
     
 }

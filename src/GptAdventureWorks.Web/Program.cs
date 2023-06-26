@@ -3,8 +3,15 @@
 
 using System.Reflection;
 using GptAdventureWorks.Web.Data;
+using GptAdventureWorks.Web.SemanticKernel;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog();
 
 
 // Add services to the container.
@@ -12,6 +19,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton(builder.Configuration.GetSection("OpenAi").Get<OpenAiConfig>()!);
 builder.Services.AddSingleton(new DbConfig(){ ConnectionString = builder.Configuration["DbConnectionString"]});
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+builder.Services.AddSemanticKernelServices();
 
 
 var app = builder.Build();

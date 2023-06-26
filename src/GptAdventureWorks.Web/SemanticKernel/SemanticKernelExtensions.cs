@@ -11,18 +11,22 @@ public static class SemanticKernelExtensions
         // Semantic Kernel
         services.AddScoped<IKernel>(sp =>
         {
-            var openAiConfig = sp.GetRequiredService<IOptions<OpenAiConfig>>();
+            var openAiConfig = sp.GetRequiredService<OpenAiConfig>();
+            if (string.IsNullOrEmpty(openAiConfig.Endpoint) || string.IsNullOrEmpty(openAiConfig.Key))
+            {
+                throw new ApplicationException("missing OpenAI configuration");
+            }
+            
             IKernel kernel = Kernel.Builder
                 .WithLogger(sp.GetRequiredService<ILogger<IKernel>>())
                 //.WithMemory(sp.GetRequiredService<ISemanticTextMemory>())
-                .WithAzureChatCompletionService("gpt3-5", openAiConfig.Value.Endpoint, openAiConfig.Value.Key)
+                .WithAzureChatCompletionService("gpt-35-turbo", openAiConfig.Endpoint, openAiConfig.Key)
                 .Build();
 
             kernel.ImportSkill(new SqlServerSkill(sp.GetRequiredService<DbConfig>()));
 
             return kernel;
         });
-        
 
         return services;
     }

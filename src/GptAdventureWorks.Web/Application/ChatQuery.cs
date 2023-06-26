@@ -43,7 +43,7 @@ Return only the SQL.
         chatOptions.Messages.Add(new ChatMessage(ChatRole.User, request.Question!));
         
         var openAiClient = new OpenAIClient(new Uri(_openAiConfig.Endpoint!), new AzureKeyCredential(_openAiConfig.Key!));
-        var response = await openAiClient.GetChatCompletionsAsync("gpt3-5", chatOptions, cancellationToken);
+        var response = await openAiClient.GetChatCompletionsAsync("gpt-35-turbo", chatOptions, cancellationToken);
 
         return new ChatResponse()
         {
